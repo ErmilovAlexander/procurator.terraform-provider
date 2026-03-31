@@ -1,0 +1,1786 @@
+syntax = "proto3";
+
+package procurator.core.api;
+option go_package = "procurator.core.api;procurator_core_api";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+message Empty {}
+
+message ValidateResponse {
+  repeated ValidationError error_messages = 1;
+  ProcuratorVirtualMachine Pvm = 2;
+}
+
+message ValidationError {
+  string field = 1;
+  string error_message = 2;
+}
+
+// Структура запроса на простое действие
+message ActionRequest {
+  // Идентификатор целевого объекта
+  string target_id = 1;
+}
+
+// VmParamsRequest - запрос на получение виртуальной машины с параметрами ( State & Memory возвращаются всегда )
+message VmParamsRequest {
+  string target_id = 1; // Идентификатор виртуальной машины ( в запросе ListWithParams не используется )
+  bool cpu_stats = 2; // Запрашивать статистику CPU
+  bool storage_stats = 3; // Запрашивать статистику устройств хранения
+  bool network_stats = 4; // Запрашивать статистику сетевых адаптеров
+  bool uptime = 5; // Запрашивать время работы
+  bool guest_tools = 6; // Запрашивать информацию о гостевых инструментах
+  bool snapshots_stats = 7; // Запрашивать информацию о cнимках
+}
+
+// Структура простого ответа на действие
+message ActionResponse {
+  // Идентификатор задачи
+  string task_id = 1;
+}
+
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  int64 access_token_expires_at = 2;
+  string refresh_token = 3;
+  int64 refresh_token_expires_at = 4;
+}
+
+message ChangePasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
+}
+
+message CreateAppAccessTokenRequest {
+  string app_name = 1;
+}
+
+message RefreshAccessTokenRequest {
+  string refresh_token = 1;
+}
+
+message AuthenticateRequestRequest {
+  string access_token = 1;
+  string target = 2;
+  string method = 3;
+}
+
+// Аргументы для Просмотра/Создания/Переименования/Удаления папок и файлов
+message BNRDFolderRequest {
+  // Путь к объекту в формате <storage_id>:/path/to/item
+  string path = 1;
+  // Имя нового объекта, используется при создании/переименовании
+  string name = 2;
+  // Множество путей к объектам, используется при удалении
+  repeated string paths = 3;
+}
+
+message MakeEmptyFileRequest {
+  string path = 1;
+  int64 ptype = 2;
+  int64 sizeBytes = 3;
+}
+
+// Аргументы для Копирования/Перемещения объектов
+message CMItemRequest {
+  // массив объектов для копирования/перемещения в формате <storage_id>:/path/to/item
+  repeated string sources = 1;
+  // Путь к новому месту в формате <storage_id>:/path/to/folder
+  string destination = 2;
+}
+
+message UploadFileRequest {
+  string path = 1;
+  string name = 2;
+  uint64 file_type = 3;
+  bytes chunk = 4;
+}
+
+message UploadFileResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DownloadFileRequest {
+  string path = 1;
+}
+message DownloadFileResponse {
+  bytes chunk = 1;
+}
+
+message SindItem {
+  string name = 1;
+  uint32 type = 2;
+  uint64 size = 3;
+  int64 modified_time = 4;
+  string path = 5;
+  uint32 provisioned_type = 6;
+  repeated SindItem children = 7;
+}
+
+
+message DatastoreCreateRequest {
+  string name = 1; // Datastore Name
+  int32 type_code = 2; // Datastore Type 1: Local, 2: sStorm, 3: dStorm, 4: NFS
+  string server = 3; // Server IP Address, for NFS
+  string folder = 4; // Folder Name, for NFS ( ex: /mnt/nfs1 )
+  bool readonly = 5; // Readonly, for NFS
+  repeated string devices = 6; // Devices ( ex: dm-name-mpathi, sda ), for sStorm, dStorm
+  optional bool reinit = 7;// NFS option
+  optional int32 nconnect = 8;     // NFS option
+}
+
+
+message Datastore {
+  string id = 1;
+  string name = 2;
+  string pool_name = 3;
+  uint32 state = 4;
+  uint32 status = 5;
+  int32 type_code = 6;
+  string drive_type = 7;
+  Capacity capacity = 8;
+  bool thin_provisioning = 9;
+  string access_mode = 10;
+  string hardware_acceleration = 11;
+  string device = 12;
+  bool storage_io_control = 13;
+  string meta_data_volume = 14;
+  Connectivity connectivity = 15;
+  repeated StormMetaHost hosts = 16;
+}
+
+message Connectivity {
+  string endpoint = 1;
+  string user = 2;
+  string password = 3;
+  string protocol = 4;
+}
+
+message Capacity {
+  double capacity_mb = 1;
+  double provisioned_mb = 2;
+  double free_mb = 3;
+  double used_mb = 4;
+}
+
+message StormMetaHost {
+  string name = 1;
+  string uuid = 2;
+  string id = 3;
+  google.protobuf.Timestamp atime = 4;
+}
+
+message DatastoreList {
+  repeated Datastore datastores = 1;
+}
+
+message ScreenShotResponse {
+  string image = 1;
+}
+
+message VmsListResponse {
+  repeated ProcuratorVirtualMachine items = 1;
+}
+
+message CpuArchModels {
+  map<string, string> models = 1;
+}
+
+message BusTypes {
+  map<string, string> types = 1;
+}
+
+message CdromBusTypes {
+  map<string, string> types = 1;
+}
+
+message CapabilitiesResponse {
+  int32 max_vcpus = 1;
+  int64 max_mem_kib = 2;
+  map<string, string> cpu_models = 3;
+  map<string, CpuArchModels> cpu_arch_models = 4;
+  map<string, string> machine_types = 5;
+  map<string, BusTypes> bus_types = 6;
+  map<string, CdromBusTypes> cdrom_bus_type = 7;
+  map<string, int32> machine_max_vcpus = 8;
+}
+
+
+// Request to create a new VM
+message VMCreateRequest {
+  // Start VM after creation
+  bool start = 1;
+  // Procurator VM Definition
+  ProcuratorVirtualMachine vm = 2;
+}
+
+// Request to define a VM
+message VMDefineRequest {
+  // path to the VM location "dsId:/path/to/descriptor
+  string path = 1;
+  bool force = 2;
+}
+
+message VMDefineResponse {
+  string target = 1; // vm deployment name
+  string name = 2; // vm name
+}
+
+// ProcuratorVM Procurator Virtual Machine Definition
+message ProcuratorVirtualMachine {
+  string deployment_name = 1;
+  string name = 2;
+  string uuid = 3;
+  string compatibility = 4;
+  string guest_os_family = 5;
+  string guest_os_version = 6;
+  ProcVMStorage storage = 7;
+  string machine_type = 8;
+  ProcVMCPU cpu = 9;
+  ProcVMMemory memory = 10;
+  ProcVMVideo video_card = 11;
+  repeated ProcUSBController usb_controllers = 12;
+  repeated ProcInputDevice input_devices = 13;
+  repeated ProcDiskDevice disk_devices = 14;
+  repeated ProcNetworkDevice network_devices = 15;
+  repeated ProcPciPtDevice pci_pt_devices = 16 [deprecated = true]; // Deprecated, update to PassThroughPCIDevices 2025
+  Options options = 17;
+  ProcVMMonitoring monitoring = 18;
+  bool IsTemplate = 29;
+  repeated ProcUsbPtDevice usb_pt_devices = 20;
+}
+
+message ProcVMCPU {
+  int32 vcpus = 1;
+  int32 max_vcpus = 2;
+  int32 core_per_socket = 3;
+  string model = 4;
+  int32 reservation_mhz = 5;
+  int32 limit_mhz = 6;
+  int32 shares = 7;
+  bool hotplug = 8;
+  CPUAffinity scheduling_affinity = 9;
+}
+
+message CPUAffinity {
+  repeated int32 cpus = 1;
+}
+
+message ProcVMMemory {
+  int32 size_mb = 1;
+  bool hotplug = 2;
+  int32 reservation_mb = 3;
+  int32 limit_mb = 4;
+}
+
+message ProcVMVideo {
+  string adapter = 1;
+  int32 displays = 2;
+  int32 memory_mb = 3;
+}
+
+message ProcInputDevice {
+  string type = 1;
+  string bus = 2;
+}
+
+message ProcUSBController {
+  string type = 1;
+}
+
+message ProcDiskDevice {
+  uint64 size = 1;
+  string source = 2;
+  string storage_id = 3;
+  string device_type = 4;
+  string bus = 5;
+  string target = 6;
+  int32 boot_order = 7;
+  string provision_type = 8;
+  string disk_mode = 9;
+  bool sharing = 10;
+  bool read_only = 11;
+  int32 shares = 12;
+  string cache = 13;
+  string io = 14;
+  int32 limit_iops = 15;
+  string discard = 16;
+  bool create = 17;
+  bool remove = 18;
+  bool attach = 19;
+  bool detach = 20;
+  bool resize = 21;
+}
+
+message ProcNetworkDevice {
+  string network = 1;
+  string net_bridge = 2;
+  string mac = 3;
+  string target = 4;
+  string model = 5;
+  int32 boot_order = 6;
+  int32 vlan = 7;
+  optional string  import_source_name = 8;
+}
+
+message ProcPciPtDevice {
+  string id = 1;
+  string vendor_name = 2;
+  string class_name = 3;
+  string device_name = 4;
+  optional string address = 5;
+  optional bool mediated_device = 6;
+  optional string mediated_device_uuid = 7;
+}
+
+message ProcUsbPtDevice {
+  string vendor_id = 1 [deprecated = true]; // 2026
+  string product_id = 2 [deprecated = true]; // 2026
+  string qemu_id = 3;
+  string sys_path = 4;
+  string product_name = 5;
+  string class = 6;
+  string serial = 7;
+  int64 vendor_id_2 = 8;
+  int64 product_id_2 = 9;
+}
+
+message Options {
+  ProcRemoteConsole remote_console = 1;
+  ProcGuestTools guest_tools = 2;
+  ProcBootOptions boot_options = 3;
+}
+
+message ProcRemoteConsole {
+  string type = 1;
+  int32 port = 2;
+  string keymap = 3;
+  string password = 4;
+  bool guest_os_lock = 5;
+  int32 limit_sessions = 6;
+  Spice spice = 7;
+}
+
+message Spice {
+  string img_compression = 1;
+  string jpeg_compression = 2;
+  string zlib_glz_compression = 3;
+  string streaming_mode = 4;
+  bool playback_compression = 5;
+  bool file_transfer = 6;
+  bool clipboard = 7;
+}
+
+message ProcGuestTools {
+  bool enabled = 1;
+  bool synchronized_time = 2;
+  bool balloon = 3;
+}
+
+message ProcBootOptions {
+  string firmware = 1;
+  int32 boot_delay_ms = 2;
+  bool boot_menu = 3;
+}
+
+message ProcVMStorage {
+  string id = 1;
+  string folder = 2;
+}
+
+message ProcVMMonitoring {
+  uint32 state = 1;
+  uint32 status = 2;
+  Memory memory = 3;
+  CPU cpu = 4;
+  Storage storage = 5;
+  repeated ProcMonitoringNetwork networks = 6;
+  Uptime uptime = 7;
+  GuestTools guest_tools = 8;
+  string evc_cpu_mode = 9;
+  string evc_graphics_mode = 10;
+  string encryption = 11;
+  string tpm = 12;
+  string vbs = 13;
+}
+
+message Memory {
+  int32 dram_read_bandwidth = 1;
+  int32 pmem_read_bandwidth = 2;
+  double provisioned_mb = 3;
+  double used_mb = 4;
+  double resident_set_size_mb = 5;
+}
+
+message CPU {
+  uint64 current_vcpus = 1;
+  double provisioned_mhz = 2;
+  double used_mhz = 3;
+}
+
+message Storage {
+  double provisioned_space_mb = 1;
+  double used_space_mb = 2;
+  double allocated_space_mb = 3;
+}
+
+message Uptime {
+  google.protobuf.Timestamp start_time = 1;
+  int64 uptime_ms = 2;
+  string uptime_humanized = 3;
+}
+
+message GuestTools {
+  string status = 1;
+  string version = 2;
+  string ip = 3;
+  string dns_name = 4;
+}
+
+message ProcMonitoringNetwork {
+  string interface = 1;
+  uint64 rx_bytes = 2;
+  uint64 tx_bytes = 3;
+}
+
+message ProcGuestToolsInfo {
+  bool enabled = 1;
+  string status = 2;
+  string version = 3;
+  repeated string ip_addresses = 4;
+  string host_name = 5;
+}
+
+message QemuNetworkInterfaces {
+  repeated QemuNetworkInterfaceInfo return = 1;
+}
+
+message QemuNetworkInterfaceInfo {
+  string name = 1;
+  repeated IpAddressInfo ip_addresses = 2;
+  string hardware_address = 3;
+}
+
+message IpAddressInfo {
+  string ip_address_type = 1;
+  string ip_address = 2;
+  int32 prefix = 3;
+}
+
+message QemuHostName {
+  QemuHostNameInfo return = 1;
+}
+
+message QemuHostNameInfo {
+  string host_name = 1;
+}
+
+message HealthStatusResponse {
+  int32 status = 1;
+  string version = 2;
+  string message = 3;
+}
+
+message GetTLSConfigResponse {
+  string cert = 1;
+  string key = 2;
+}
+
+// ProcuratorHost Procurator Host Definition
+message ProcuratorHost {
+  string host_uuid = 1;
+  string hostname = 2;
+  string hypervisor = 3;
+  string model = 4;
+  string processor_type = 5;
+  int32 logical_processors = 6;
+  int32 nics = 7;
+  int32 virtual_machines = 8;
+  uint32 state = 9;
+  string uptime = 10;
+  ProcuratorHostHardware hardware = 11;
+  ProcuratorHostConfiguration configuration = 12;
+  ProcuratorHostSystemInformation system_information = 13;
+  uint64 total_net_rx_bytes = 14;
+  uint64 total_net_tx_bytes = 15;
+  repeated ResourceMeter resource_meter = 16;
+  bool associated = 17; // Host is associated with a sphere
+}
+
+message ProcuratorHostHardware {
+  string manufacturer = 1;
+  string model = 2;
+  ProcuratorHostCpuInfo cpu = 3;
+  uint64 memory_used = 4;
+  uint64 memory_total = 5;
+  ProcuratorHostVirtualFlash virtual_flash = 6;
+  ProcuratorHostNetworking networking = 7;
+  ProcuratorHostStorage storage = 8;
+}
+
+message ProcuratorHostCpuInfo {
+  int32 logical_processors = 1;
+  string processor_type = 2;
+  int32 sockets = 3;
+  int32 cores_per_socket = 4;
+  bool hyperthreading = 5;
+}
+
+message ProcuratorHostVirtualFlash  {
+  uint64 capacity_bytes = 1;
+  uint64 used_bytes = 2;
+  uint64 free_bytes = 3;
+}
+
+message ProcuratorHostNetworking {
+  string hostname = 1;
+  repeated ProcuratorHostIPs ips = 2;
+  repeated string dns_servers = 3;
+  string default_gw = 4;
+  bool ip_v6_enabled = 5;
+  int32 physical_adapters = 6;
+  repeated ProcuratorHostNetworks networks = 7;
+}
+
+message ProcuratorHostIPs {
+  string adapter = 1;
+  string ip = 2;
+}
+
+message ProcuratorHostNetworks {
+  string network_name = 1;
+  int32 vms = 2;
+}
+
+message ProcuratorHostStorage {
+  int32 physical_adapters = 1;
+  repeated ProcuratorHostDatastores datastores = 2;
+}
+
+message ProcuratorHostDatastores {
+  string name = 1;
+  string type = 2;
+  double capacity_mb = 3;
+  double free_mb = 4;
+}
+
+message ProcuratorHostConfiguration {
+  string image_profile = 1;
+  string ha_state = 2;
+  bool vMotion_supported = 3;
+  string vMotion_virtual_nic = 4;
+}
+
+message ProcuratorHostSystemInformation {
+  string date_time_on_host = 1;
+  string initial_date = 2;
+  string asset_tag = 3;
+  string serial_number = 4;
+  string bios_version = 5;
+  string bios_release_date = 6;
+}
+
+message ResourceMeter {
+  string type = 1;
+  double free = 2;
+  double used = 3;
+  double capacity = 4;
+}
+
+message ProcuratorCertificate {
+  string subject = 1;
+  string issuer = 2;
+  string valid_from = 3;
+  string valid_to = 4;
+  string status = 5;
+}
+
+message ProcuratorLicense {
+  string license = 1;
+  string license_key = 2;
+  string product = 3;
+  string usage = 4;
+  int64 license_expiration = 5;
+  repeated string license_features = 6;
+}
+
+message ProcuratorServices {
+  repeated ProcuratorService services = 1;
+}
+
+message ProcuratorService {
+  string name = 1;
+  string status = 2;
+  string startup_policy = 3;
+  string runlevel = 4;
+}
+
+message ProcuratorPackages {
+  repeated ProcuratorPackage packages = 1;
+}
+
+message ProcuratorPackage {
+  string name = 1;
+  string description = 2;
+  string version = 3;
+  string vendor = 4;
+  string install_date = 5;
+}
+
+message ProcuratorPCIDevices {
+  repeated ProcuratorPCIDevice devices = 1;
+}
+
+message ProcuratorPCIDevice {
+  string type = 1;
+  string vendor = 2;
+  string vendor_name = 3;
+  string device = 4;
+  string device_name = 5;
+  string class = 6;
+  string class_name = 7;
+  string address = 8;
+  string short_address = 9;
+  string domain = 10;
+  string bus = 11;
+  string slot = 12;
+  string function = 13;
+  string sr_iov = 14;
+  string passthrough = 15;
+  string label = 16;
+  string driver = 17;
+}
+
+message VmCheckResponse{
+  bool ready = 1; // true for ready 2 migrate
+}
+
+// Структура аргументов запроса на создание задачи
+message TaskCreateRequest {
+  // Метод, который будет выполнен в формате Object.method ( Datastore.create, VM.power_on и т.д. )
+  string method = 1;
+  // Уникальный идентификатор целевого объекта задачи ( имя, id и т.д. )
+  string target = 2;
+  // Аргументы задачи в формате base64
+  string args = 3;
+}
+
+// Структура задачи
+message TaskItem {
+  // Уникальный идентификатор задачи
+  string id = 1;
+  // Метод, который будет выполнен в формате Object.method ( Datastore.create, VM.power_on и т.д. )
+  string method = 2;
+  // Аргументы задачи в формате base64
+  string args = 3;
+  // Имя задачи для отображения
+  string task_name = 4;
+  // Тип целевого объекта ( user, group, vm, host, datacenter, и т.д. )
+  string target_type = 5;
+  // Уникальный идентификатор целевого объекта задачи ( имя, id и т.д. )
+  string target = 6;
+  // Статус задачи 0: в очереди, 1: выполняется, 2: завершена, 3: ошибка
+  uint32 status = 7;
+  // Сообщение об ошибке
+  string error = 8;
+  // Дополнительные детали
+  string details = 9;
+  // Пользователь, инициировавший задачу
+  string initiator = 10;
+  // Время создания задачи
+  int64 creation_time = 11;
+  // Время начала исполнения задачи
+  int64 start_time = 12;
+  // Время завершения задачи
+  int64 completion = 13;
+  // Последний номер ревизии
+  int64 mod_revision = 14;
+  // Зона, в которой выполняется задача
+  string zone = 15;
+  // Сервер, на котором выполняется задача
+  string server = 16;
+  // Связанные события
+  repeated RelatedEvent related_events = 17;
+  // Расширенная информация о задаче
+  TaskExtra extra = 18;
+}
+
+// Расширенная информация о задаче, используется в интерфейсе
+message TaskExtra {
+  // Имя цели
+  string target_name = 1;
+  // Тип цели
+  string target_type = 2;
+  // Идентификатор созданного объекта
+  string created_id = 3;
+  // Имя созданного объекта
+  string created_name = 4;
+  // Время, используется в журнале событий
+  int64 time = 5;
+  // Информация для задач с пакетной обработкой нескольких объектов
+  repeated TaskGroupExtra group_extra = 6;
+  // Информация для журнала событий
+  string event_info = 7;
+  // Информация по операциям update
+  optional UpdateOperations update_operations = 8;
+  // Описатель pvm после операции update
+  optional ProcuratorVirtualMachine pvm = 9;
+}
+
+// Структура для задач с пакетной обработкой нескольких объектов
+message TaskGroupExtra {
+  // Идентификатор созданного объекта
+  string created_id = 1;
+  // Имя созданного объекта
+  string created_name = 2;
+}
+
+// Связанное событие
+message RelatedEvent {
+  // Идентификатор события
+  string id = 1;
+  // Время начала события
+  int64 started = 2;
+  // Описание события
+  string description = 3;
+}
+
+// Структура для запроса списка задач
+message TaskList {
+  // Список задач
+  repeated TaskItem tasks = 1;
+}
+
+// EtcdConfig Etcd Configuration
+message EtcdConfig {
+  repeated string endpoints = 1; // Etcd Endpoints
+  string username = 2; // Etcd username
+  string password = 3; // Etcd password
+  bytes CertChainPEM = 4; // Etcd Certificate Chain
+  bytes ClientKeyPEM = 5; // Etcd Client Key
+  bytes RootCAPEM = 6; // Etcd Root CA
+}
+
+// AssociateRequest Associate Request
+message AssociateRequest {
+  string assoc_name = 1; // Association name, identifier, must be unique
+  EtcdConfig etcd_config = 2; // Etcd Configuration
+}
+
+// MonitoringStreamRequest запрос на мониторинг ресурсов
+message MonitoringStreamRequest {
+  // Интервал мониторинга в секундах
+  uint32 interval = 1;
+}
+
+// Monitoring Stream Message сообщение мониторинга
+message MonitoringStreamMessage {
+  oneof filter {
+    google.protobuf.Empty empty = 1;
+    ProcuratorHost host = 2;
+    DatastoreList datastores = 3;
+    NetworksInfoResponse networks = 4;
+    VmsListResponse virtual_machines = 5;
+    TreeResponse backup_tree = 6;
+    bytes heart_beat = 7;
+    TemplatesResponse template = 8;
+  }
+}
+
+message PropertyLock {
+  string master_id = 1;
+}
+
+// MigrationLock - блокировка миграции виртуальной машины
+message MigrationLock {
+  enum State {
+    INCOMPLETE = 0;
+    SUCCESS = 1;
+    FAILURE = 2;
+  }
+  string host_uuid = 1; // UUID хоста
+  State state = 2; // Состояние миграции
+  string deploymentName = 3; // pvm deployment_name
+  bytes uuid = 4; // UUID виртуальной машины (libvirt)
+  int32 id = 5; // ID виртуальной машины (libvirt)
+  bytes cookie = 6; // Cookie для идентификации миграции
+}
+
+// MigrationProperties - свойства миграции
+message MigrationProperties {
+  // Ограничение по полосе пропускания в Мбит/с
+  fixed32 bandwidth_limit = 1;
+}
+
+// ActionMigrateRequest - аргументы для миграции виртуальной машины
+message ActionMigrateRequest {
+  //
+  MigrationProperties properties = 1;
+  // ID виртуальной машины
+  string target_id = 2;
+  // IP адрес хоста источника
+  string source_host_ip = 3;
+  // IP адрес хоста источника в сети vMotion
+  string source_host_vmotion_ip = 4;
+  // IP адрес хоста назначения
+  string remote_host_ip = 5;
+  // IP адрес хоста назначения в сети vMotion
+  string remote_host_vmotion_ip = 6;
+  // uuid хоста назначения
+  string remote_host_uuid = 7;
+  // Токен хоста назначения
+  string remote_host_token = 8;
+}
+
+// MigrateHostMessage - аргументы и ответы при live миграции хоста
+message MigrateHostMessage {
+  enum Kind {
+    UNKNOWN = 0;
+    OP_PREPARE = 1;
+    RESP_PREPARE = 2;
+    OP_FINISH = 3;
+    RESP_FINISH = 4;
+  }
+  Kind kind = 1;
+  bytes cookie = 2;
+  string xml = 3;
+  repeated string connection_string = 4;
+  string domain_name = 5;
+  bytes domain_uuid = 6;
+  int32 domain_id = 7;
+  string pvm_path = 8;
+}
+
+message SessionMetric {
+  string Id = 1;
+  int64 BytesReceived = 2;
+  int64 BytesTransmitted = 3;
+  int64 TimeStamp = 4;
+  double Bitrate = 5;
+}
+
+message SessionsStream {
+  repeated SessionMetric Metrics = 1;
+}
+
+message SnapMemConfig {
+  int64 mem_length = 1; // in bytes
+}
+
+message SnapLockDisk {
+  string src_storm_path = 1; // Путь к исходному диску в реальной файловой системе
+  string dst_storm_path = 2; // Путь к целевому диску в реальной файловой системе
+  int64 virt_size = 3; // Реальный размер файла диска в байтах
+}
+
+// SnapRevertLock
+message SnapDeleteLock {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_CALCULATED = 1; // Оверлеи дисков переключены
+    STATE_EXTENDED = 2; // Описатель ВМ обновлён
+    STATE_REBASED = 3; // Бэкинги дисков переименованы
+    STATE_SUCCESS = 4; // Переключение снимка успешно завершено
+  }
+
+  message Disk {
+    State state = 1;
+    string storm_path = 2;
+    string  real_path = 3; // Путь к исходному диску в реальной файловой системе
+    int64 used_size = 4; // Реальный размер файла диска в байтах
+    int64 virt_size = 5; // Размер виртуального диска в байтах
+    optional Disk backing_disk = 6; // Бэкинг диска, если есть
+    string ds_id = 7; // ID хранилища, на котором находится диск
+  }
+  message Child {
+    State state = 1;
+    int64 Id = 2; // ID дочернего снимка
+    repeated Disk disks = 3; // мапа дисков, участвующих в дочернем снимке (ключ - real_path)
+  }
+
+  string host_uuid = 1; // UUID хоста
+  State state = 2; // Состояние восстановления снимка
+  string deployment_name = 3; // pvm deployment_name
+  int64 snap_id = 4;
+  string snap_name = 5; // Имя снимка, который восстанавливается
+  int64 snap_parent_id = 6; // ID родительского снимка, если есть
+  bool all = 7;
+  repeated Child children = 8; // список дочерних снимков, которым надо сменить быкинги дисков
+  map<string, int64> ds_free_space_required = 9; // Требуемое свободное место на дисках в байтах
+  map<string, bool> ds_demand_disk_explicit_extend = 10;
+}
+
+// SnapRevertLock
+message SnapRevertLock {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OVERLAYS_SWITCHED = 1; // Оверлеи дисков переключены
+    STATE_PVM_UPDATED = 2; // Описатель ВМ обновлён
+    STATE_SUCCESS = 3; // Переключение снимка успешно завершено
+  }
+  string host_uuid = 1; // UUID хоста
+  State state = 2; // Состояние восстановления снимка
+  string deployment_name = 3; // pvm deployment_name
+  int64 snap_id = 4; // ID снимка, который восстанавливается
+  // состояние ВМ после переключения:
+  //  true - приостановить (если восстанавливаемся в живой снапшот),
+  //  false - восстановить
+  bool suspend = 5;
+  repeated SnapLockDisk disks = 6; // Список дисков, участвующих в снимке
+}
+
+// SnapshotLock - блокировка снимка виртуальной машины
+message SnapTakeLock {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_MEMDUMP_FILE_CREATED = 1; // Файл для дампа памяти создан
+    STATE_OVERLAYS_CREATED = 2; // Файлы для оверлеев созданы
+    STATE_CREATED = 3; // Оверлеи дисков успешно созданы и переключены
+    STATE_RENAMED = 4; // Оверлеи и бэкинги переименованы
+    STATE_SUCCESS = 6; // Снимок успешно создан, описатель ВМ обновлён
+  }
+
+  string host_uuid = 1; // UUID хоста
+  State state = 2; // Состояние снимка
+  string deployment_name = 3; // pvm deployment_name
+  string name = 4;
+  bool is_live = 5; // true - снимок живой виртуальной машины, false - снимок выключенной виртуальной машины
+  bool with_quiesce_fs = 6;
+  bool with_mem = 7;
+  string mem_dump_storm_path = 8; // Путь к дампу памяти в формате storm://<storage_id>/<path>
+  int64 mem_dump_size = 9; // Размер дампа памяти в байтах
+  repeated SnapLockDisk disks = 10; // Список дисков, участвующих в снимке
+}
+
+// если память сохраняется при snapshot
+message SnapshotMemory {
+  bool enabled = 1;
+  string source = 2;
+}
+
+// описания дисков snapshot
+message SnapshotDisk {
+  string source = 1;
+  string target = 2;
+}
+
+message Snapshot {
+  int64 id = 1;                     // Snapshot id, обязательное поле
+  string name = 2;                  // Snapshot name, обязательное поле
+  string description = 3;           // Snapshot description, необязательное поле
+  int64 timestamp = 4;              // Snapshot timestamp, обязательное поле
+  int64 size = 5;                   // Snapshot size, заполняется на бэкенде при выводе списка
+  bool quiesce_fs = 6;              // Quiesce filesystem
+  string vm_description = 7;        // VM description
+  SnapshotMemory memory = 8;        // Состояние памяти, обязательное поле
+  repeated SnapshotDisk disks = 9;  // Список дисков снимка, обязательное поле
+  int32 parent_id = 10;             // Snapshot parent id, необязательное поле
+}
+
+message SnapshotsResponse {
+  int64 current_id = 1;
+  repeated Snapshot items = 2;
+}
+
+// список запланированных задач
+message ScheduledTasksResponse {
+  repeated ScheduledTaskResponse tasks = 1; // Список запланированных задач
+}
+
+message ScheduledTaskRequest {
+  string target_vm = 1;
+  string target_rid = 2;
+}
+
+// одна запланированная task
+message ScheduledTaskResponse {
+  string rid = 1;            // Идентификатор отложенной задачи
+  string name = 2;           // Имя задачи
+  string description = 3;    // Описание задачи
+  string target = 4;         // Цель задачи, идентификатор объекта, для которого она предназначена
+  string cron = 5;           // Частота запуска в формате cron. Если значение "after_procurator_startup", задача выполняется сразу после запуска
+  string sched_type = 6;     // Тип правила для отображения на фронте (scheduler)
+  string args = 7;           // Атрибуты для метода в формате base64
+  string notify_emails = 8;  // Email для уведомлений о выполнении задачи, разделённые запятой
+  bool toggle = 9;           // true - правило активно, false - не активно
+  string initiator = 10;     // Инициатор, под чьей учётной записью создана задача
+  int64 last_modified = 11;  // Время создания/последнего изменения в Unix секундах
+  int64 next_run = 12;       // Время следующего запуска в Unix секундах
+  repeated ScheduleRun last5_runs = 13; // Последние 5 запусков задачи
+  bool need_gap = 14;        // Если true, то проверяем с gap назад во времени
+}
+
+// описание одного срабатывания запланированной task
+message ScheduleRun {
+  string tid = 1;       // Идентификатор задачи (той которая создана и отработала при запуске)
+  int64 start = 2;      // Начало выполнения в Unix секундах
+  int64 end = 3;        // Окончание выполнения в Unix секундах
+  int64 duration = 4;   // Время выполнения работы в секундах
+  string result = 5;    // Результат выполнения работы
+}
+
+// backup tree
+message TreeResponse {
+  string name = 1;               // Имя дерева
+  repeated TreeNode nodes = 2;   // Список узлов дерева
+}
+
+message TreeNode {
+  uint32 type = 1;               // Тип узла (смотрите object.ObjectTypes)
+  string id = 2;                 // Идентификатор узла, может быть пустым
+  string name = 3;               // Имя узла
+  uint32 state = 4;              // Состояние узла
+  uint32 level = 5;              // Уровень узла в дереве
+  bool has_nodes = 6;            // True, если у узла есть дочерние узлы
+  bool draggable = 7;            // True, если узел можно перемещать
+  repeated TreeNode nodes = 8;   // Список дочерних узлов
+  double used_size_mb = 9;       // Используемое пространство в Mb
+}
+
+message ListBackupStoragesResponse {
+  repeated BackupStorage storages = 1;
+}
+
+// Запись о хранилище backup
+message BackupStorage {
+  string id = 1;                            // Определяется при создании/подключении хранилища
+  uint32 state = 2;                         // Состояние хранилища (значение 0-255)
+  string name = 3;                          // Имя хранилища, может быть изменено, если хранилище уже существует
+  int32 type_code = 4;                      // 1: "local", 2: "nfs", 3: "smb"
+  BackupStorageCapacity capacity = 5;       // Мониторинговая информация о хранилище
+  string path = 6;                          // Путь к хранилищу
+  string location = 7;                      // Откуда было монтирование, например: nfs://127.0.0.1/mnt
+  string type_text = 8;                     // Текстовое представление типа хранилища
+}
+
+message BackupStorageCapacity {
+  double capacity_mb = 1;       // Общая емкость в мегабайтах
+  double provisioned_mb = 2;    // Предоставленная емкость в мегабайтах
+  double free_mb = 3;           // Свободное место в мегабайтах
+  double used_mb = 4;           // Использованное место в мегабайтах
+  double used_by_backups_mb = 5;// Место занятое только бекапами
+}
+
+message BackupStorageResponse {
+  string name = 1;                  // Название хранилища
+  int32 type = 2;                   // Тип хранилища (1, 2, 3 или другое числовое значение)
+  string location = 3;              // Локация хранилища
+  uint32 state = 4;                 // Состояние хранилища (используем uint32 вместо uint8)
+  repeated RM resource_meter = 5;   // Список ресурсных метрик
+}
+
+message RM {
+  string type = 1;     // Тип ресурса
+  double free = 2;     // Свободное место
+  double used = 3;     // Использованное место
+  double capacity = 4; // Вместимость
+}
+
+message BucketsResponse {
+  repeated BucketResponse buckets = 1;
+}
+
+message BucketRequest {
+  string storage_id = 1;
+  string bucket_id = 2;
+}
+
+message BucketResponse {
+  string vmid = 1;           // Идентификатор виртуальной машины
+  uint32 state = 2;          // Состояние (используем uint32 вместо uint8)
+  string last_name = 3;      // Имя ВМ в последнем бэкапе
+  int32 backups_count = 4;   // Количество бэкапов
+  int64 size = 5;            // Размер
+  int64 last_backup = 6;     // Последний бэкап (дата) в unixtime
+  double used_size_mb = 7;   // Занимаемое место в Mb
+}
+
+message BackupsRequest {
+  string storage_id = 1;
+  string bucket_id = 2;
+}
+
+message BackupsResponse {
+  repeated BackupItem backups = 1;
+}
+
+message BackupItem {
+  string storage_id = 1;       // Идентификатор хранилища, заполняется только для вывода на фронт
+  string storage_name = 2;     // Имя хранилища, заполняется только для вывода на фронт
+  string uuid = 3;             // Уникальный идентификатор бэкапа
+  string name = 4;             // Имя бэкапа
+  string description = 5;      // Описание бэкапа
+  int32 kind = 6;              // Тип бэкапа (0: full, 1: incremental, 2: differential)
+  string vmid = 7;             // Идентификатор виртуальной машины
+  string vm_name = 8;          // Имя виртуальной машины
+  int64 creation_time = 9;     // Время создания бэкапа в формате Unix timestamp
+  uint32 creation_type = 10;   // Тип создания бэкапа (1: manual, 2: scheduled)
+  uint32 state = 11;           // Состояние бэкапа, используется при выводе информации
+  string msg = 12;             // Сообщение о состоянии бэкапа
+  double used_size_mb = 13;    // Занимаемое место в Mb
+}
+
+message BackupPVMDescRequest {
+  string storage_id = 1;
+  string bucket_id = 2;
+  string backup_id = 3;
+}
+
+message BackupDisksListRequest {
+  string storage_id = 1;
+  string bucket_id = 2;
+  string backup_id = 3;
+}
+
+message BackupDisksListResponse {
+  repeated ProcDiskDevice disks = 1;
+}
+
+// VmWare Virtual Machine Definition
+message VmWareVirtualMachine {
+  string id = 1;
+  string name = 2;
+  string state = 3; // power state
+  string status = 4 ;
+  optional string datacenter = 5;
+  repeated   string  not_ready = 6; // list reason for blocking  import
+  repeated   string  warning_ready = 7; // list of warning for  import
+}
+
+message ImportVmWareConnectRequest {
+  string fqdn = 1; // fqdn for esxi or VmSphere , with or without port number
+  string user = 2; // VmWare login
+  string password = 3; // VmWare password
+}
+
+message ImportVmWareConnectResponse {
+  repeated VmWareVirtualMachine vms = 1;
+}
+
+message ImportVmWareConvertRequest {
+  string fqdn = 1; // fqdn for esxi or VmSphere , with or without port number
+  string user = 2; // VmWare login
+  string password = 3; // VmWare password
+  string datacenter = 5;
+  string vmWare_vm_name = 6;
+  string dst_datastore = 7;
+  string dst_vm_name = 8;
+}
+
+message ImportVmWareRequest {
+  string dst_vm = 1;
+  string fqdn = 2; // fqdn for esxi or VmSphere , with or without port number
+  string user = 3; // VmWare login
+  string password = 4; // VmWare password
+  string src_vm = 5;
+  string datacenter = 6;
+  ProcuratorVirtualMachine pvm = 7;
+}
+
+message Template {
+  ProcuratorVirtualMachine pvm = 1;
+  string path = 2;
+}
+
+message TemplatesViews {
+  string name = 1;
+  string compatibility = 2;
+  string uuid = 3;
+  uint64 provisionedSpace = 4;
+  string guest_os_type = 5;
+  int64 memory_size = 6;
+  int64 cpus = 7;
+  int64 net_dev_count = 8;
+  string storage_id = 9;
+}
+
+message TemplatesList {
+  repeated TemplatesViews templates = 1;
+  int64 total_pages = 2;
+  int64 total_items = 3;
+}
+
+message TemplatesResponse {
+  repeated TemplatesViews templates = 1;
+}
+
+message TemplateName {
+  string name = 1;
+}
+
+message VmToTemplateRequest {
+  string vm_id = 1;
+  string storage_id = 2;
+  string template_name = 3;
+}
+
+message TemplateRequest {
+  string id = 1;
+  string storage_dst = 2;
+  string vm_name = 3;
+  bool start = 4;
+  int64 clone_count = 5;
+  bool linked = 6;
+}
+
+message TemplateDirectRequest {
+  TemplateRequest req = 1;
+  ProcuratorVirtualMachine pvm = 2;
+}
+
+message PaginatedReq {
+  int64 page_size = 2;
+  int64 page = 3;
+}
+
+message CopiedDisk {
+  string src = 1;
+  string dst = 2;
+}
+
+message TemplateLock {
+  enum State {
+    INFLIGHT = 0;
+    SUCCESS = 1;
+  }
+  State state = 1;
+  string template_id = 2;
+  string template_folder = 3;
+  bool is_disks_copied = 4;
+  bool descriptor_created = 5;
+  repeated CopiedDisk disks_copied = 6;
+}
+
+message TemplateLock2 {
+  bool db_new_record_added = 1;
+  bool db_old_record_deleted = 2;
+  bool descriptor_changed = 3;
+  bool descriptor_renamed = 4;
+  string host_uuid = 5;
+}
+
+message DeployTemplateLock {
+  bool folder_created = 1;
+  map<string, bool> copied_disks = 2;
+  bool all_disks_copied = 3;
+  bool vm_created = 4;
+}
+
+message VmFromTmplLock {
+  enum State {
+    INFLIGHT = 0;
+    SUCCESS = 1;
+  }
+  State state = 1;
+  string vm_folder = 2;
+  bool disks_copied = 3;
+}
+
+message TemplateResponse {
+  string id = 1;
+  string name = 2;
+}
+
+message ValidationResponseTemplate {
+  repeated ValidationError error_messages = 1;
+  string FolderPath = 2;
+}
+
+// DataStoreMigrationLock - блокировка миграции между датасторами
+message DataStoreMigrationLock {
+  enum State {
+    STATE_UNSPECIFIED = 0; // Миграция не начата
+    STATE_INCOMPLETE = 1; // Миграция не завершена
+    STATE_SUCCESS = 2;
+    STATE_FAILURE = 3;
+  }
+  message Item {
+    string id = 1; // Идентификатор датастора куда мигрировать объект
+    string src_path = 2; // штормовой путь файла или объекта для миграции
+    string dst_path = 3; // штормовой путь назначения для миграции
+    uint32 ptype = 4; // тип размещения тонкий/толстый...(1/2/3)
+    bool connected = 5; // Флаг, указывающий, подключен ли объект к живой VM
+    State state = 6; // Состояние миграции
+  }
+  string host_uuid = 1; // UUID хоста
+  State state = 2; // Состояние миграции вцелом
+  string deployment_name = 3; // pvm deployment_name
+  bool is_live = 4; // Флаг, указывающий, является ли миграция живой
+  string src_folder = 5; // Исходная папка для миграции
+  string dst_folder = 6; // Целевая папка для миграции
+  repeated Item items = 7; // Список объектов для миграции
+}
+
+message VmDsMigrateItem {
+  string id = 1;
+  uint32 ptype = 2;
+}
+
+message MigrateVmDatastoreRequest {
+  // ID виртуальной машины
+  string target_id = 1;
+  map<string, VmDsMigrateItem> items = 2;
+}
+
+// ******************umbra import***********************
+
+message NetworksInfoResponse {
+  repeated NetworkInfo networks_info = 1;
+}
+
+// Network configuration object (TOP)
+message NetworkInfo {
+  enum Kind {
+    UNKNOWN = 0;
+    NORMAL = 1;
+    SYSTEM = 2;
+  }
+  string id = 1;
+  string name = 17;
+  State state = 2;
+  optional ListIndex index = 3;
+
+  uint32 vlan = 4;
+  string net_bridge = 5;
+  Kind kind = 6;
+  string switch = 7;
+  uint64 vms_count = 8;
+  uint64 active_ports = 9;
+  repeated VmInfo vm_list = 10;
+  optional SysxInfo sysx = 11;
+  Security security = 12;
+  Shaping shaping = 13;
+  Teaming teaming = 14;
+  NICs nics = 15;
+}
+
+// object state
+message State {
+  enum State {
+    UNKNOWN = 0;
+    OK = 1;
+    WARNING = 2;
+    ERROR = 3;
+  }
+
+  State state = 1;
+  repeated string errors = 2;
+}
+
+message ListIndex {
+  uint64 idx = 1;
+  uint64 count = 2;
+}
+
+// Sysx configuration object for Network
+message VmInfo {
+  string id = 1;
+  string name = 2;
+  repeated VmPortInfo ports = 3;
+  bool is_active = 4;
+}
+
+// Sysx configuration object for Network
+message VmPortInfo {
+  string id = 1;
+  string name = 2;
+  string mac = 3;
+  string adapter = 4;
+}
+
+// Sysx configuration object (TOP)
+message SysxInfo {
+  string id = 1;
+  State state = 2;
+  optional ListIndex index = 3;
+
+  string switch = 4;
+  string network_id = 5;
+  string tcp_stack = 6;
+  Services services = 7;
+  uint32 mtu = 8;
+  IPv4Settings ipv4_settings = 9;
+  string mac = 10;
+}
+
+// Services configuration object for Sysx
+message Services {
+  bool Management = 1;
+  bool VMotion = 2;
+  bool Provisioning = 3;
+  bool VSAN = 4;
+  bool FaultToleranceLogging = 5;
+  bool VSphereReplication = 6;
+  bool VSphereReplicationNFC = 7;
+  bool VSphereBackupNFC = 8;
+  bool NVMeOverTCP = 9;
+  bool NVMeOverRDMA = 10;
+}
+
+// IPv4 settings configuration object for Sysx
+message IPv4Settings {
+  bool auto = 1;
+  fixed32 ipv4 = 2;
+  fixed32 mask = 3;
+  bool gateway_override = 4;
+  optional fixed32 gateway = 5;
+  uint32 routing_table = 6;
+}
+
+// security configuration object
+message Security {
+  YNIOption promiscuous = 1;
+  YNIOption mac_change = 2;
+  YNIOption forged_transmits = 3;
+
+  YNIOption promiscuous_computed = 4;
+  YNIOption mac_change_computed = 5;
+  YNIOption forged_transmits_computed = 6;
+}
+
+// represent 3 variant boolean configuration option value
+enum YNIOption {
+  INHERIT = 0;
+  YES = 1;
+  NO = 2;
+}
+
+// shaping configuration object
+message Shaping {
+  bool inherit = 1;
+  bool enabled = 2;
+  int64 average_bw = 3;
+  int64 peak_bw = 4;
+  int64 burst_size = 5;
+}
+
+// teaming configuration object
+message Teaming {
+  enum Mode {
+    TEAM_MODE_INHERIT = 0;
+    TEAM_MODE_ACTIVE_BACKUP = 1;
+    TEAM_MODE_SLB = 2;
+    TEAM_MODE_TCP = 3;
+  }
+  enum LinkDetectionMode {
+    TEAM_LINK_DETECT_INHERIT = 0;
+    TEAM_LINK_DETECT_CARIER = 1;
+    TEAM_LINK_DETECT_BEAKON = 2;
+  }
+  Mode mode = 1;
+  LinkDetectionMode link_detection_mode = 2;
+  YNIOption notify_switches = 3;
+  YNIOption failback = 4;
+
+  Mode mode_computed = 5;
+  LinkDetectionMode link_detection_mode_computed = 6;
+  YNIOption notify_switches_computed = 7;
+  YNIOption failback_computed = 8;
+}
+
+// NICs configuration object
+message NICs {
+  repeated string active = 1;
+  repeated string standby = 2;
+  repeated string unused = 3;
+  repeated string connected = 4;
+  bool inherit = 5;
+}
+
+// UpdateLock - блокировка update виртуальной машины
+message UpdateLock {
+  uint64 create_time = 1; // время создания
+  ProcuratorVirtualMachine old_pvm = 2; // описатель vm перед update
+  ProcuratorVirtualMachine req_pvm = 3; // описатель vm который был в запросе фронта
+  repeated UpdateOperationLock update_operations = 4; // список операций апдейта
+}
+
+// UpdateOperationLock - операция update vm со статусом, ошибками и аргументами
+message UpdateOperationLock {
+  UpdateOperationType operation_type = 1; // тип операции update vm
+  enum OperationState {
+    VS_UNDEFINED = 0;
+    VS_CAN_UPDATE = 1; // можно делать update
+    VS_CANT_UPDATE = 2; // нельзя делать update
+    VS_CANT_UPDATE_CRITICAL = 3; // нельзя делать update и выходим из update с ошибкой
+    VS_UPDATE_SUCCESS = 4; // update успешно прошёл
+    VS_UPDATE_PATRIAL_SUCCESS = 5; // update прошёл частично успешно - можно обновить описатель, но не все операции выполнены (при удалении диска из вм детач диска прошёл, но удалить соурс не удалось)
+    VS_UPDATE_FAIL = 6; // update не прошёл
+  }
+  OperationState state = 2; // статус операции update vm
+  string message_err = 3;  // содержание ошибки операции update vm
+  int32 err = 4; // идентификатор ошибки update vm
+}
+
+// UpdateOperationType - перечень операций, которые может выполнить update vm
+enum UpdateOperationType {
+  // Неопределённое значение
+  O_UNDEFINED = 0;
+
+  // CPU
+  O_CPU_VCPU = 1;
+  O_CPU_OTHER = 2;
+
+  // Memory
+  O_MEMORY_SIZE_CHANGE = 3;
+  O_MEMORY_HP_RES_LIM_CHANGE = 4;
+
+  // Disk devices
+  O_DETACH_DISK_DEVICE = 5;
+  O_REMOVE_DISK_DEVICE = 6;
+  O_ATTACH_DISK_DEVICE = 7;
+  O_CREATE_DISK_DEVICE = 8;
+  O_UPDATE_BOOT_ORDER_DISK_DEVICE = 9;
+  O_RESIZE_DISK_DEVICE = 10;
+  O_UPDATE_SHARES_IOPS_DISK_DEVICE = 11 [deprecated = true];  // 2026
+  O_UPDATE_DISKMODE_BUS_SHARING = 12;
+  O_UPDATE_TARGET_DISK_DEVICE = 13;
+  O_UPDATE_CDROM_SOURCE_DISK_DEVICE = 14;
+
+  // Network devices
+  O_DETACH_NETWORK_DEVICE = 15;
+  O_UPDATE_BOOT_ORDER_NETWORK_DEVICE = 16;
+  O_UPDATE_NETWORK_NETWORK_DEVICE = 17;
+  O_UPDATE_MODEL_NETWORK_DEVICE = 18;
+  O_ATTACH_NETWORK_DEVICE = 19;
+
+  // General VM settings
+  O_UPDATE_VM_NAME = 20;
+  O_UPDATE_MACHINE_TYPE = 21;
+  O_UPDATE_GUEST_OS_FAMILY = 22;
+  O_UPDATE_GUEST_OS_VERSION = 23;
+
+  // Other
+  O_UPDATE_OTHER_BOOT_MENU = 24;
+  O_UPDATE_OTHER_FIRMWARE = 25;
+  O_UPDATE_OTHER_BOOT_DELAY_MS = 26;
+  O_UPDATE_OTHER_GT_ENABLED = 27;
+  O_UPDATE_OTHER_GT_SYNC_TIME = 28;
+  O_UPDATE_OTHER_RC_KEYMAP = 29;
+  O_UPDATE_OTHER_RC_PW = 30;
+  O_UPDATE_OTHER_RC_FILE_TRANSFER = 31;
+  O_UPDATE_OTHER_RC_CLIPBOARD = 32;
+  O_UPDATE_OTHER_VC_ADAPTER = 33;
+  O_UPDATE_OTHER_DISPLAYS = 34;
+
+  // Passthrough PCI devices
+  O_UPDATE_PASSTHROUGN_PCI_DEVICES = 35;
+
+  // passthrough USB devices
+  O_UPDATE_ADD_PASSTHROUGH_USB_DEVICE = 36;
+  O_UPDATE_DELETE_PASSTHROUGH_USB_DEVICE = 37;
+
+  // Other
+  O_UPDATE_OTHER_GT_BALLOON = 38;
+
+  // CPU
+  O_CPU_SCHEDULING_AFFINITY = 39;
+
+  // Disk
+  O_UPDATE_IO_LIMIT_DEVICE = 40;
+  O_UPDATE_SHARES_DISK_DEVICE = 41;
+}
+
+
+// Таблица активных хостов с проверкой через дисковые HB
+message HostsByHB {
+  repeated HostByHB hosts = 1;
+}
+
+message HostByHB {
+  // UUID Хоста
+  string uuid = 1;
+  // Активен или нет
+  bool alive = 2;
+  // Количество пропущенных проверок
+  int32 missed = 3;
+  // Последняя успешная проверка
+  string last_seen_ago = 4;
+}
+
+message CfgFront {
+  string key = 1; // имя переменной
+  google.protobuf.Value value = 2;
+  string summary = 3; // описание
+  string type = 4;    // тип переменной
+  CfgFrontValidateConditions validation = 5;
+}
+
+message CfgGetResponse {
+  repeated CfgFront values = 1;
+}
+
+message CfgFrontValidateConditions {
+  google.protobuf.Value min = 1;
+  google.protobuf.Value max = 2;
+  google.protobuf.Value equal = 3;
+  google.protobuf.Value not_equal = 4;
+  string format = 5;
+}
+
+message CfgFrontValidationErr {
+  string key = 1;
+  google.protobuf.Value value = 2;
+  string error = 3;
+}
+
+message CfgSetRequest {
+  repeated CfgFront values = 1;
+}
+
+message CfgSetResponse {
+  repeated CfgFrontValidationErr val_errs = 1;
+}
+
+message  ListUSBDevicesResponse {
+  repeated USBDevice items = 1;
+}
+
+message USBDevice {
+  int64 vendor_id = 1;           // hex -> число (0x10ee)
+  string vendor_name = 2;
+  int64 product_id = 3;          // hex -> число
+  string product_name = 4;
+  USBClass class = 5;
+  string serial = 6;
+
+  string bus = 7;                // "001"
+  string device = 8;             // "004"
+  string addr_sys_usb = 9;       // "1-2.3"
+
+  repeated USBInterface interfaces = 10;
+
+  USBPassthroughStatus passthrough = 11;
+  string owner_deployment_name = 12;
+  string owner_name = 13;
+}
+
+message USBInterface {
+  USBClass class = 1;
+  string sub_class = 2;
+  string driver = 3;
+}
+
+enum USBPassthroughStatus {
+  USB_PASSTHROUGH_STATUS_NOT_CONFIGURABLE = 0;
+  USB_PASSTHROUGH_STATUS_ENABLE = 1;
+  USB_PASSTHROUGH_STATUS_DISABLE = 2;
+  USB_PASSTHROUGH_STATUS_PASSTHROUGHED = 3;
+}
+
+enum USBClass {
+  USB_CLASS_UNDEFINED = 0;
+  USB_CLASS_PER_INTERFACE = 1;
+  USB_CLASS_AUDIO = 2;
+  USB_CLASS_COMMUNICATIONS = 3;
+  USB_CLASS_HUMAN_INTERFACE_DEVICE = 4;
+  USB_CLASS_PHYSICAL = 5;
+  USB_CLASS_IMAGE = 6;
+  USB_CLASS_PRINTER = 7;
+  USB_CLASS_MASS_STORAGE = 8;
+  USB_CLASS_HUB = 9;
+  USB_CLASS_CDC_DATA = 10;
+  USB_CLASS_SMART_CARD = 11;
+  USB_CLASS_CONTENT_SECURITY = 12;
+  USB_CLASS_VIDEO = 13;
+  USB_CLASS_PERSONAL_HEALTHCARE = 14;
+  USB_CLASS_AUDIO_VIDEO = 15;
+  USB_CLASS_BILLBOARD = 16;
+  USB_CLASS_TYPE_C_BRIDGE = 17;
+  USB_CLASS_DIAGNOSTIC = 18;
+  USB_CLASS_WIRELESS = 19;
+  USB_CLASS_APPLICATION_SPECIFIC_1 = 20;
+  USB_CLASS_DIAGNOSTIC_DEVICE = 21;
+  USB_CLASS_WIRELESS_CONTROLLER = 22;
+  USB_CLASS_MISCELLANEOUS = 23;
+  USB_CLASS_APPLICATION_SPECIFIC_2 = 24;
+  USB_CLASS_VENDOR_SPECIFIC = 25;
+}
+
+// Хранилище резервных копий
+message MonitoringEventBackupStorage {
+  string name = 1;                    // Название хранилища
+  int32 type = 2;                     // Тип хранилища (1, 2, 3 или другое числовое значение)
+  string location = 3;                // Локация хранилища
+  uint32 state = 4;                   // Состояние хранилища
+  BackupStorageCapacity capacity = 5; // Данные по заполняемости хранилища
+}
+
+// Бакет резервных копий ВМ
+message MonitoringEventBucket {
+  string backup_storage_id = 1;       // Идентификатор хранилища резервных копий
+  string vm_id = 2;                   // Идентификатор виртуальной машины
+  uint32 state = 3;                   // Состояние
+  string last_name = 4;               // Имя ВМ в последнем бэкапе
+  int32 backups_count = 5;            // Количество бэкапов
+  int64 size = 6 [deprecated = true]; // Размер 2026
+  int64 last_backup = 7;              // Последний бэкап (unixtime)
+  double used_size_mb = 8;            // Занимаемое в хранилище место
+}
+
+enum UpdateOperationState {
+  VS_UNDEFINED = 0;
+  VS_CAN_UPDATE = 1; // можно делать update
+  VS_CANT_UPDATE = 2; // нельзя делать update
+  VS_CANT_UPDATE_CRITICAL = 3; // нельзя делать update и выходим из update с ошибкой
+  VS_UPDATE_SUCCESS = 4; // update успешно прошёл
+  VS_UPDATE_PATRIAL_SUCCESS = 5; // update прошёл частично успешно - можно обновить описатель, но не все операции выполнены (при удалении диска из вм детач диска прошёл, но удалить соурс не удалось)
+  VS_UPDATE_FAIL = 6; // update не прошёл
+}
+
+
+message UpdateOperation {
+  UpdateOperationType operation_type = 1; // тип операции update vm
+  UpdateOperationState state = 2; // статус операции update vm
+  string message_err = 3;  // содержание ошибки операции update vm
+}
+
+message UpdateOperations {
+  repeated UpdateOperation update_operation = 1;
+}
+
+message UploadSession {
+  optional string file_id = 1; // not required
+  string file_name = 2; // required file name который клиент загружает на сервер
+  uint64 file_size = 3; // required
+  uint32 chunk_size = 4; // required
+  optional int32 total_chunks = 5; // not required
+  string path = 6; // required путь в прокураторе
+  repeated int32 bit_map = 7; // not required перечень успешно загруженных чанков
+  optional int64 start = 8; // not required время инициации загрузки, юникс
+  optional UploadStatus status = 9; // not required
+}
+
+enum UploadStatus {
+  UNDEFINED = 0;
+  PENDING = 1;
+  IN_PROGRESS = 2;
+  FAILED = 3;
+  SUCCESS = 4;
+}
+
+message UploadActionRequest {
+  string id = 1;
+  optional int32 chunk_num = 2;
+  bytes chunk = 3;
+}
+
+message UploadSessionList {
+  repeated UploadSession sessions = 1;
+}
+
+message UploadChunkResponse {
+  int32 upload_chunks = 1;
+  bool completed = 2;
+  repeated int32 chunks_with_errors = 3;
+  repeated string chunks_write_errors = 4;
+}

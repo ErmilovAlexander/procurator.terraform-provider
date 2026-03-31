@@ -1,0 +1,251 @@
+syntax = "proto3";
+
+package procurator.core.api;
+option go_package = "procurator.core.api;procurator_core_api";
+import "google/protobuf/empty.proto";
+import "procurator_model.proto";
+
+// методы для получения информации о сервисе procurator.core
+service Core {
+  // HealthStatus предоставляет версию core и текущий статус
+  rpc HealthStatus (Empty) returns (HealthStatusResponse);
+  // GetTLSConfig предоставляет данные для TLS соединения
+  rpc GetTLSConfig (Empty) returns (GetTLSConfigResponse);
+}
+
+// методы для работы с procurator через механизм тасок
+// механизм тасок гарантирует то, что над одним объектом (vm, datastore..) будет производиться только одна операция одновременно
+service Task {
+  // Create создание таски, возвращает id созданной таски
+  rpc Create(TaskCreateRequest) returns (ActionResponse) {}
+  // List предоставляет полный перечень тасок
+  rpc List(Empty) returns (TaskList) {}
+  // Get предоставляет всю информацию о конкретной таске по id, можно понять статус выполнения (status) и результат выполнения
+  rpc Get(ActionRequest) returns (TaskItem) {}
+  // Wait ждёт когда таска с переданным id будет запущена и отработает, после чего возвращает полную информацию о таске
+  rpc Wait(ActionRequest) returns (stream TaskItem) {}
+}
+
+// методы аутентификации
+service Auth {
+  // Login аутентификация, возвращает токены
+  rpc Login(LoginRequest) returns (AuthResponse) {}
+  // Logout выход из системы
+  rpc Logout(Empty) returns (Empty) {}
+  // ChangePassword смена пароля для пользователя
+  rpc ChangePassword(ChangePasswordRequest) returns (Empty) {}
+  // CreateAppAccessToken создание токена для application
+  rpc CreateAppAccessToken(CreateAppAccessTokenRequest) returns (AuthResponse) {}
+  // RefreshAccessToken обновление токенов для application
+  rpc RefreshAccessToken(RefreshAccessTokenRequest) returns (AuthResponse) {}
+  rpc AuthenticateRequest(AuthenticateRequestRequest) returns (Empty) {}
+}
+
+// методы для получения информации о хосте, сервисах, лицензиях
+service Host {
+  // Get получить информацию о хосте
+  rpc Get(Empty) returns (ProcuratorHost) {}
+  // Certificate получение сертификата
+  rpc Certificate(Empty) returns (ProcuratorCertificate) {}
+  // RenewCertificate обновить сертификат
+  rpc RenewCertificate(Empty) returns (ProcuratorCertificate) {}
+  // License получить лицензию
+  rpc License(Empty) returns (ProcuratorLicense) {}
+  // Services получить информацию о сервисах (название, статус, политика запуска..)
+  rpc Services(Empty) returns (ProcuratorServices) {}
+  // Packages получить информацию о версии сервисов (версия, дата установки)
+  rpc Packages(Empty) returns (ProcuratorPackages) {}
+  // PciDevices информация о девайсах PCI
+  rpc PciDevices(Empty) returns (ProcuratorPCIDevices) {}
+  rpc TogglePciPassthrough(ActionRequest) returns (ActionResponse) {}
+  // Associate host with Sphere
+  rpc Associate(AssociateRequest) returns (Empty) {}
+  // Disassociate host from Sphere
+  rpc Disassociate(Empty) returns (Empty) {}
+  // Monitoring Stream - поток мониторинговых данных от хоста
+  rpc MonitoringStream(MonitoringStreamRequest) returns (stream MonitoringStreamMessage);
+  // GetCfg - получить конфиг в плоском представлении для фронта
+  rpc GetCfg(google.protobuf.Empty) returns (CfgGetResponse) {}
+  // SetCfg - отправить данные для изменения конфига и получить ошибки валидации при изменении конфига
+  rpc SetCfg(CfgSetRequest) returns (CfgSetResponse) {}
+  // ListUSBDevices - перечень девайсов, подключенных к хосту
+  rpc ListUSBDevices(google.protobuf.Empty) returns (ListUSBDevicesResponse) {}
+}
+
+// методы для создания, взаимодействия, удаления хранилищ
+// виртуальные машины хранятся в файлах хранилищь
+// не имеет отношения к хранилищам для бэкапов
+service Datastores {
+  // Создание нового хранилища, подключение к хосту и добавление в базу данных
+  rpc Create(DatastoreCreateRequest) returns (ActionResponse) {}
+  // Список хранилищ
+  rpc List(Empty) returns (DatastoreList) {}
+  // Получение информации о хранилище
+  rpc Get(ActionRequest) returns (Datastore) {}
+  // Удаление хранилища, отключение от хоста и удаление из базы данных
+  rpc Delete(ActionRequest) returns (ActionResponse) {}
+  //  Отключение  хранилища, отключение от хоста БЕЗ удаления данных
+  rpc Disconnect(ActionRequest) returns (ActionResponse) {}
+  // Перевод хранилища в режим обслуживания
+  rpc EnterMaintenanceMode(ActionRequest) returns (ActionResponse) {}
+  // Выход хранилища из режима обслуживания
+  rpc ExitMaintenanceMode(ActionRequest) returns (ActionResponse) {}
+  // Просмотр содержимого хранилища или директории в хранилище
+  rpc BrowseFolder(BNRDFolderRequest) returns (SindItem) {}
+  // Загрузка файла в хранилище
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse) {}
+  // Скачивание файла из хранилища
+  rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse) {}
+  // Создание новой папки в хранилище
+  rpc NewFolder(BNRDFolderRequest) returns (ActionResponse) {}
+  // Создание пустого файла в хранилище ( для системных нужд, не рекомендуется использовать пользователю )
+  rpc MakeEmptyFile(MakeEmptyFileRequest) returns (ActionResponse) {}
+  // Переименование папки или файла в хранилище
+  rpc RenameItem(BNRDFolderRequest) returns (ActionResponse) {}
+  // Копирование элементов[папок и файлов] в хранилище
+  rpc CopyItem(CMItemRequest) returns (ActionResponse) {}
+  // Перемещение элементов[папок и файлов] в хранилище
+  rpc MoveItem(CMItemRequest) returns (ActionResponse) {}
+  // Удаление элемента[папки или файла] в хранилище
+  rpc DeleteItem(BNRDFolderRequest) returns (ActionResponse) {}
+  // Получение информации об активных хостах
+  rpc ActiveHostsByDiskHeartbeat(ActionRequest) returns (HostsByHB) {}
+}
+
+// методы для управления загрузками файлов на хост
+service UploadSessions {
+  // Создание новой сессии upload
+  rpc New(UploadSession) returns (UploadSession) {}
+  // Загрузка чанка
+  rpc UploadChunk(stream UploadActionRequest) returns (UploadChunkResponse) {}
+  // Перечень актуальных сессий загрузки
+  rpc List(google.protobuf.Empty) returns (UploadSessionList) {}
+  // Финализировать сессию upload
+  rpc Finalize(UploadActionRequest) returns (google.protobuf.Empty) {}
+  // Удаление сессии upload
+  rpc Delete(UploadActionRequest) returns (google.protobuf.Empty) {}
+}
+
+// методы для создания, взаимодействия, удаления виртуальных машин
+service Vms {
+  // Validate валидация описателя (ProcuratorVirtualMachine) виртуальной машины перед create или update
+  rpc Validate(ProcuratorVirtualMachine) returns (ValidateResponse) {}
+  // Create создание виртуальной машины согласно переданному описателю
+  rpc Create(VMCreateRequest) returns (ActionResponse) {}
+  // Check checks if VMCreateRequest can be applied for creating VM
+  rpc Check(VMCreateRequest) returns (VmCheckResponse) {}
+  // Define регистрация виртуальной машины из файла в хранилище
+  rpc Define(VMDefineRequest) returns (VMDefineResponse) {}
+  // List перечень виртуальных машин
+  rpc List(Empty) returns (VmsListResponse) {}
+  // ListWithParams - список виртуальных машин с параметрами отображения статистики
+  rpc ListWithParams(VmParamsRequest) returns (VmsListResponse) {}
+  // Remove удаление виртуальной машины без удаления файлов виртуальной машины
+  rpc Remove(ActionRequest) returns (ActionResponse) {}
+  // Delete удаление виртуальной машины и файлов
+  rpc Delete(ActionRequest) returns (ActionResponse) {}
+  // Get получение описателя виртуальной машины по id
+  rpc Get(ActionRequest) returns (ProcuratorVirtualMachine) {}
+  // GetWithParams - получение виртуальной машины с параметрами отображения статистики
+  rpc GetWithParams(VmParamsRequest) returns (ProcuratorVirtualMachine) {}
+  // Capabilities получение capabilities виртуальной машины
+  rpc Capabilities(Empty) returns (CapabilitiesResponse) {}
+  // Update обновление виртуальной машины
+  rpc Update(ProcuratorVirtualMachine) returns (ActionResponse) {}
+  // PowerOn запуск виртуальной машины
+  rpc PowerOn(ActionRequest) returns (ActionResponse) {}
+  // PowerOff выключение виртуальной машины без установленной ОС и guest tools
+  rpc PowerOff(ActionRequest) returns (ActionResponse) {}
+  // HardStop жёсткая остановка виртуальной машины без завершения операций чтения/записи, без гарантий запуска в дальнейшем
+  rpc HardStop(ActionRequest) returns (ActionResponse) {}
+  // Reset перезагрузка виртуальной машины без участия guest tools
+  rpc Reset(ActionRequest) returns (ActionResponse) {}
+  // ShutdownGuest выключение виртуальной машины при помощи guest tools
+  rpc ShutdownGuest(ActionRequest) returns (ActionResponse) {}
+  // RestartGuest перезагрузка виртуальной машины при помощи guest tools
+  rpc RestartGuest(ActionRequest) returns (ActionResponse) {}
+  // Suspend приостановить работу виртуальной машины
+  rpc Suspend(ActionRequest) returns (ActionResponse) {}
+  // Resume восстановить работу виртуальной машины
+  rpc Resume(ActionRequest) returns (ActionResponse) {}
+  // MountGuestTools примонтировать guest tools к виртуальной машине
+  rpc MountGuestTools(ActionRequest) returns (ActionResponse) {}
+  // UnmountGuestTools отмонтировать guest tools от виртуальной машины
+  rpc UnmountGuestTools(ActionRequest) returns (ActionResponse) {}
+  // Screenshot снимок экрана виртуальной машины
+  rpc Screenshot(ActionRequest) returns (ScreenShotResponse) {}
+  // Миграция виртуальной машины на другой хост
+  rpc MigrateHost(ActionMigrateRequest) returns (ActionResponse) {}
+  // Управление хостом принимающим миграцию
+  rpc MigrateHostRemote(stream MigrateHostMessage) returns (stream MigrateHostMessage) {}
+  // Move VM files between datastore
+  rpc MigrateVmDatastore(MigrateVmDatastoreRequest) returns (ActionResponse) {}
+  rpc SendSessionsMetric(Empty) returns (stream SessionsStream) {}
+  // List снапшотов
+  rpc Snapshots(ActionRequest) returns (SnapshotsResponse) {}
+  // List бэкапов vm по id
+  rpc Backups(ActionRequest) returns (BackupsResponse) {}
+  // List scheduled tasks перечень всех запланированных задач одной vm
+  rpc ListScheduledTasks(ActionRequest) returns (ScheduledTasksResponse) {}
+  // Get scheduled task информация об одной конретной запланированной задаче vm
+  rpc GetScheduledTask(ScheduledTaskRequest) returns (ScheduledTaskResponse) {}
+  // Creates a template from VM
+  rpc TemplateFromVm(VmToTemplateRequest) returns (TemplateResponse) {}
+  // Lists templates
+  rpc ListTemplates(PaginatedReq) returns (TemplatesList) {}
+  // Gets a long descriptor of template with given ID
+  rpc GetLongTemplate(TemplateRequest) returns (Template) {}
+  // Transforms a template with given ID onto pvm struct
+  rpc GetPvmFromTemplate(TemplateRequest) returns (ProcuratorVirtualMachine) {}
+  // Creates a template with given parameters
+  rpc CreateTemplate(Template) returns (TemplateResponse) {}
+  // Updates a template with given data (you should send a full description with/without your changes)
+  rpc UpdateTemplate(Template) returns (ActionResponse) {}
+  // Removes a template with given ID
+  rpc RemoveTemplate(TemplateRequest) returns (ActionResponse) {}
+  // Validates a given template
+  rpc ValidateTemplate(Template) returns (ValidationResponseTemplate) {}
+  // Validates name of template
+  rpc ValidateTemplateName(TemplateName) returns (ValidationResponseTemplate) {}
+  // connect to VmWare and list vm`s
+  rpc ImportVmwareConnect(ImportVmWareConnectRequest) returns (ImportVmWareConnectResponse) {}
+  // convert descriptor from VmWare to Procurator
+  rpc ImportVmWareConvert(ImportVmWareConvertRequest) returns (ProcuratorVirtualMachine) {}
+  // Run import task
+  rpc ImportVmVware(ImportVmWareRequest) returns (ActionResponse) {}
+  // TEMPLATES 2
+  // converts VM to template
+  rpc ConvertVmToTemplate2(ActionRequest) returns (ActionResponse) {}
+  // converts template to VM
+  rpc ConvertTemplateToVm2(ActionRequest) returns (ActionResponse) {}
+  // deploys new vm from template
+  rpc DeployFromTemplate2(TemplateRequest) returns (ActionResponse) {}
+  // removes template
+  rpc RemoveTemplate2(ActionRequest) returns (ActionResponse) {}
+  // lists templates
+  rpc ListTemplates2(PaginatedReq) returns (VmsListResponse) {}
+  // gets template by deployment name
+  rpc GetTemplate2(ActionRequest) returns (ProcuratorVirtualMachine) {}
+  // deploys new vm from given template (you should send full body of a template)
+  rpc DeployTemplateDirect(TemplateDirectRequest) returns (ActionResponse) {}
+}
+
+// методы для получения информации о бэкапах и стореджах для бэкапов
+service Backup {
+  // backup Tree
+  rpc GetBackupTree(Empty) returns (TreeResponse) {}
+  // List backup storages
+  rpc ListBackupStorages(Empty) returns (ListBackupStoragesResponse) {}
+  // информация по одному backup стореджу
+  rpc GetBackupStorage(ActionRequest) returns (BackupStorageResponse) {}
+  // List backup buckets (по storage_id)
+  rpc ListBuckets(ActionRequest) returns (BucketsResponse) {}
+  // Get backup bucket (по storage_id и bucket_id)
+  rpc GetBucket(BucketRequest) returns (BucketResponse) {}
+  // List backup (по storage_id и bucket_id)
+  rpc ListBackups(BackupsRequest) returns (BackupsResponse) {}
+  // GetBackupPVMDesc получить описатель вм из бэкапа
+  rpc GetBackupPVMDesc(BackupPVMDescRequest) returns (ProcuratorVirtualMachine) {}
+  // GetBackupDisksList получить список дисков из бэкапа
+  rpc GetBackupDisksList(BackupDisksListRequest) returns (BackupDisksListResponse) {}
+}
