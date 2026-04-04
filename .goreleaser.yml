@@ -1,0 +1,56 @@
+project_name: terraform-provider-procurator
+ 
+before:
+  hooks:
+    - go mod tidy
+    - mkdir -p internal/client/certs
+    - echo "$CA_CERT" > internal/client/certs/procurator-root-ca.pem
+
+builds:
+  - id: default
+    main: .
+    binary: terraform-provider-procurator
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    format: zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE*
+      - README*
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+
+signs:
+  - artifacts: checksum
+    cmd: gpg
+    args:
+      - "--batch"
+      - "--yes"
+      - "--armor"
+      - "--detach-sign"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "${artifact}"
+
+release:
+  github:
+    owner: ErmilovAlexander
+    name: terraform-provider-procurator
+
+  name_template: "v{{ .Version }}"
+  draft: false
+  prerelease: false
