@@ -248,6 +248,11 @@ func (p *ProcuratorProvider) Configure(ctx context.Context, req provider.Configu
 	if !config.Authority.IsNull() && !config.Authority.IsUnknown() {
 		cfg.Authority = config.Authority.ValueString()
 	}
+
+	if !strings.Contains(cfg.Endpoint, ":") {
+		cfg.Endpoint = cfg.Endpoint + ":3641"
+	}
+
 	if cfg.Endpoint == "" {
 		resp.Diagnostics.AddError("Missing endpoint", "Set provider.endpoint or PROCURATOR_ENDPOINT")
 		return
