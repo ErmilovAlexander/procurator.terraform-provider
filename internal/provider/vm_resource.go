@@ -100,35 +100,39 @@ type vmBootOptionsModel struct {
 }
 
 type vmResourceModel struct {
-	ID             types.String           `tfsdk:"id"`
-	Start          types.Bool             `tfsdk:"start"`
-	PowerState     types.String           `tfsdk:"power_state"`
-	PowerForce     types.Bool             `tfsdk:"power_force"`
-	TemplateID     types.String           `tfsdk:"template_id"`
-	Name           types.String           `tfsdk:"name"`
-	UUID           types.String           `tfsdk:"uuid"`
-	Compatibility  types.String           `tfsdk:"compatibility"`
-	GuestOSFamily  types.String           `tfsdk:"guest_os_family"`
-	GuestOSVersion types.String           `tfsdk:"guest_os_version"`
-	MachineType    types.String           `tfsdk:"machine_type"`
-	StorageID      types.String           `tfsdk:"storage_id"`
-	StorageFolder  types.String           `tfsdk:"storage_folder"`
-	VCPUs          types.Int64            `tfsdk:"vcpus"`
-	MaxVCPUs       types.Int64            `tfsdk:"max_vcpus"`
-	CorePerSocket  types.Int64            `tfsdk:"core_per_socket"`
-	CPUModel       types.String           `tfsdk:"cpu_model"`
-	CPUHotplug     types.Bool             `tfsdk:"cpu_hotplug"`
-	MemorySizeMB   types.Int64            `tfsdk:"memory_size_mb"`
-	MemoryHotplug  types.Bool             `tfsdk:"memory_hotplug"`
-	DiskDevices    []vmDiskModel          `tfsdk:"disk_devices"`
-	NetworkDevices []vmNICModel           `tfsdk:"network_devices"`
-	VideoCard      []vmVideoModel         `tfsdk:"video_card"`
-	USBControllers []vmUSBControllerModel `tfsdk:"usb_controllers"`
-	InputDevices   []vmInputDeviceModel   `tfsdk:"input_devices"`
-	RemoteConsole  []vmRemoteConsoleModel `tfsdk:"remote_console"`
-	GuestTools     []vmGuestToolsModel    `tfsdk:"guest_tools"`
-	BootOptions    []vmBootOptionsModel   `tfsdk:"boot_options"`
-	IsTemplate     types.Bool             `tfsdk:"is_template"`
+	ID                types.String           `tfsdk:"id"`
+	Start             types.Bool             `tfsdk:"start"`
+	PowerState        types.String           `tfsdk:"power_state"`
+	PowerForce        types.Bool             `tfsdk:"power_force"`
+	TemplateID        types.String           `tfsdk:"template_id"`
+	Name              types.String           `tfsdk:"name"`
+	UUID              types.String           `tfsdk:"uuid"`
+	Compatibility     types.String           `tfsdk:"compatibility"`
+	GuestOSFamily     types.String           `tfsdk:"guest_os_family"`
+	GuestOSVersion    types.String           `tfsdk:"guest_os_version"`
+	MachineType       types.String           `tfsdk:"machine_type"`
+	StorageID         types.String           `tfsdk:"storage_id"`
+	StorageFolder     types.String           `tfsdk:"storage_folder"`
+	VCPUs             types.Int64            `tfsdk:"vcpus"`
+	MaxVCPUs          types.Int64            `tfsdk:"max_vcpus"`
+	CorePerSocket     types.Int64            `tfsdk:"core_per_socket"`
+	CPUModel          types.String           `tfsdk:"cpu_model"`
+	CPUHotplug        types.Bool             `tfsdk:"cpu_hotplug"`
+	MemorySizeMB      types.Int64            `tfsdk:"memory_size_mb"`
+	MemoryHotplug     types.Bool             `tfsdk:"memory_hotplug"`
+	GuestToolsStatus  types.String           `tfsdk:"guest_tools_status"`
+	GuestToolsVersion types.String           `tfsdk:"guest_tools_version"`
+	GuestIP           types.String           `tfsdk:"guest_ip"`
+	GuestDNSName      types.String           `tfsdk:"guest_dns_name"`
+	DiskDevices       []vmDiskModel          `tfsdk:"disk_devices"`
+	NetworkDevices    []vmNICModel           `tfsdk:"network_devices"`
+	VideoCard         []vmVideoModel         `tfsdk:"video_card"`
+	USBControllers    []vmUSBControllerModel `tfsdk:"usb_controllers"`
+	InputDevices      []vmInputDeviceModel   `tfsdk:"input_devices"`
+	RemoteConsole     []vmRemoteConsoleModel `tfsdk:"remote_console"`
+	GuestTools        []vmGuestToolsModel    `tfsdk:"guest_tools"`
+	BootOptions       []vmBootOptionsModel   `tfsdk:"boot_options"`
+	IsTemplate        types.Bool             `tfsdk:"is_template"`
 }
 
 func NewVMResource() resource.Resource { return &VMResource{} }
@@ -148,27 +152,31 @@ func (r *VMResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 	resp.Schema = schema.Schema{
 		Description: "Manages a VM through procurator.core Vms service.",
 		Attributes: map[string]schema.Attribute{
-			"id":               schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"start":            schema.BoolAttribute{Optional: true},
-			"power_state":      schema.StringAttribute{Optional: true, Computed: true},
-			"power_force":      schema.BoolAttribute{Optional: true},
-			"template_id":      schema.StringAttribute{Optional: true},
-			"name":             schema.StringAttribute{Required: true},
-			"uuid":             schema.StringAttribute{Computed: true},
-			"compatibility":    schema.StringAttribute{Optional: true, Computed: true},
-			"guest_os_family":  schema.StringAttribute{Optional: true, Computed: true},
-			"guest_os_version": schema.StringAttribute{Optional: true, Computed: true},
-			"machine_type":     schema.StringAttribute{Optional: true, Computed: true},
-			"storage_id":       schema.StringAttribute{Required: true},
-			"storage_folder":   schema.StringAttribute{Optional: true, Computed: true},
-			"vcpus":            schema.Int64Attribute{Optional: true, Computed: true},
-			"max_vcpus":        schema.Int64Attribute{Optional: true, Computed: true},
-			"core_per_socket":  schema.Int64Attribute{Optional: true, Computed: true},
-			"cpu_model":        schema.StringAttribute{Optional: true, Computed: true},
-			"cpu_hotplug":      schema.BoolAttribute{Optional: true, Computed: true},
-			"memory_size_mb":   schema.Int64Attribute{Optional: true, Computed: true},
-			"memory_hotplug":   schema.BoolAttribute{Optional: true, Computed: true},
-			"is_template":      schema.BoolAttribute{Optional: true, Computed: true},
+			"id":                  schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"start":               schema.BoolAttribute{Optional: true},
+			"power_state":         schema.StringAttribute{Optional: true, Computed: true},
+			"power_force":         schema.BoolAttribute{Optional: true},
+			"template_id":         schema.StringAttribute{Optional: true},
+			"name":                schema.StringAttribute{Required: true},
+			"uuid":                schema.StringAttribute{Computed: true},
+			"compatibility":       schema.StringAttribute{Optional: true, Computed: true},
+			"guest_os_family":     schema.StringAttribute{Optional: true, Computed: true},
+			"guest_os_version":    schema.StringAttribute{Optional: true, Computed: true},
+			"machine_type":        schema.StringAttribute{Optional: true, Computed: true},
+			"storage_id":          schema.StringAttribute{Required: true},
+			"storage_folder":      schema.StringAttribute{Optional: true, Computed: true},
+			"vcpus":               schema.Int64Attribute{Optional: true, Computed: true},
+			"max_vcpus":           schema.Int64Attribute{Optional: true, Computed: true},
+			"core_per_socket":     schema.Int64Attribute{Optional: true, Computed: true},
+			"cpu_model":           schema.StringAttribute{Optional: true, Computed: true},
+			"cpu_hotplug":         schema.BoolAttribute{Optional: true, Computed: true},
+			"memory_size_mb":      schema.Int64Attribute{Optional: true, Computed: true},
+			"memory_hotplug":      schema.BoolAttribute{Optional: true, Computed: true},
+			"guest_tools_status":  schema.StringAttribute{Computed: true},
+			"guest_tools_version": schema.StringAttribute{Computed: true},
+			"guest_ip":            schema.StringAttribute{Computed: true},
+			"guest_dns_name":      schema.StringAttribute{Computed: true},
+			"is_template":         schema.BoolAttribute{Optional: true, Computed: true},
 		},
 		Blocks: map[string]schema.Block{
 			"disk_devices": schema.ListNestedBlock{NestedObject: schema.NestedBlockObject{Attributes: map[string]schema.Attribute{
@@ -333,7 +341,7 @@ func (r *VMResource) Create(ctx context.Context, req resource.CreateRequest, res
 
 	//lookupID := firstNonEmpty(task.CreatedID, plan.Name.ValueString(), vm.DeploymentName, vm.Name)
 	//created, err := r.client.GetVM(ctx, lookupID)
-	created, err := r.readCreatedVM(ctx, task, plan, vm)
+	created, err := r.readCreatedVMWithGuestTools(ctx, task, plan, vm)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read created VM", err.Error())
 		return
@@ -355,7 +363,7 @@ func (r *VMResource) Create(ctx context.Context, req resource.CreateRequest, res
 			}
 		}
 		//created, err = r.client.GetVM(ctx, lookupID)
-		created, err = r.readCreatedVM(ctx, task, plan, vm)
+		created, err = r.readCreatedVMWithGuestTools(ctx, task, plan, vm)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to read created VM after power change", err.Error())
 			return
@@ -378,7 +386,7 @@ func (r *VMResource) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		return
 	}
 
-	vm, err := r.client.GetVM(ctx, state.ID.ValueString())
+	vm, err := r.client.GetVMWithParams(ctx, state.ID.ValueString(), true)
 	if err != nil {
 		if err == client.ErrNotFound {
 			resp.State.RemoveResource(ctx)
@@ -1012,24 +1020,28 @@ func applyVMDefaults(vm *client.VM) {
 
 func flattenVMResource(in client.VM) vmResourceModel {
 	res := vmResourceModel{
-		ID:             stringValue(firstNonEmpty(in.DeploymentName, in.Name)),
-		Name:           stringValue(in.Name),
-		PowerState:     stringValue(in.PowerState),
-		UUID:           stringValue(in.UUID),
-		Compatibility:  stringValue(in.Compatibility),
-		GuestOSFamily:  stringValue(in.GuestOSFamily),
-		GuestOSVersion: stringValue(in.GuestOSVersion),
-		MachineType:    stringValue(in.MachineType),
-		StorageID:      stringValue(in.Storage.ID),
-		StorageFolder:  stringValue(in.Storage.Folder),
-		VCPUs:          types.Int64Value(int64(in.CPU.VCPUs)),
-		MaxVCPUs:       int64Value(int64(in.CPU.MaxVCPUs)),
-		CorePerSocket:  int64Value(int64(in.CPU.CorePerSocket)),
-		CPUModel:       stringValue(in.CPU.Model),
-		CPUHotplug:     boolValue(in.CPU.Hotplug),
-		MemorySizeMB:   types.Int64Value(int64(in.Memory.SizeMB)),
-		MemoryHotplug:  boolValue(in.Memory.Hotplug),
-		IsTemplate:     boolValue(in.IsTemplate),
+		ID:                stringValue(firstNonEmpty(in.DeploymentName, in.Name)),
+		Name:              stringValue(in.Name),
+		PowerState:        stringValue(in.PowerState),
+		UUID:              stringValue(in.UUID),
+		Compatibility:     stringValue(in.Compatibility),
+		GuestOSFamily:     stringValue(in.GuestOSFamily),
+		GuestOSVersion:    stringValue(in.GuestOSVersion),
+		MachineType:       stringValue(in.MachineType),
+		StorageID:         stringValue(in.Storage.ID),
+		StorageFolder:     stringValue(in.Storage.Folder),
+		VCPUs:             types.Int64Value(int64(in.CPU.VCPUs)),
+		MaxVCPUs:          int64Value(int64(in.CPU.MaxVCPUs)),
+		CorePerSocket:     int64Value(int64(in.CPU.CorePerSocket)),
+		CPUModel:          stringValue(in.CPU.Model),
+		CPUHotplug:        boolValue(in.CPU.Hotplug),
+		MemorySizeMB:      types.Int64Value(int64(in.Memory.SizeMB)),
+		MemoryHotplug:     boolValue(in.Memory.Hotplug),
+		GuestToolsStatus:  stringValue(in.GuestToolsInfo.Status),
+		GuestToolsVersion: stringValue(in.GuestToolsInfo.Version),
+		GuestIP:           stringValue(in.GuestToolsInfo.IP),
+		GuestDNSName:      stringValue(in.GuestToolsInfo.DNSName),
+		IsTemplate:        boolValue(in.IsTemplate),
 	}
 	res.VideoCard = []vmVideoModel{{Adapter: stringValue(in.VideoCard.Adapter), Displays: int64Value(int64(in.VideoCard.Displays)), MemoryMB: int64Value(int64(in.VideoCard.MemoryMB))}}
 	for _, u := range in.USBControllers {
@@ -1241,6 +1253,10 @@ func mergeVMResourceState(base vmResourceModel, in client.VM) vmResourceModel {
 	if merged.MemoryHotplug.IsNull() || merged.MemoryHotplug.IsUnknown() {
 		merged.MemoryHotplug = actual.MemoryHotplug
 	}
+	merged.GuestToolsStatus = actual.GuestToolsStatus
+	merged.GuestToolsVersion = actual.GuestToolsVersion
+	merged.GuestIP = actual.GuestIP
+	merged.GuestDNSName = actual.GuestDNSName
 	// Keep optional nested blocks exactly as configured. The provider may use
 	// internal defaults when talking to Procurator, but must not invent blocks
 	// in Terraform state if the user did not declare them in configuration.
@@ -1334,6 +1350,38 @@ func (r *VMResource) findVMByName(ctx context.Context, name string) (*client.VM,
 		}
 	}
 	return nil, nil
+}
+
+func (r *VMResource) readCreatedVMWithGuestTools(ctx context.Context, task *client.Task, plan vmResourceModel, vm *client.VM) (*client.VM, error) {
+	base, err := r.readCreatedVM(ctx, task, plan, vm)
+	if err != nil {
+		return nil, err
+	}
+
+	if base.PowerState != "running" {
+		return base, nil
+	}
+
+	target := firstNonEmpty(base.DeploymentName, base.Name)
+	if target == "" {
+		return base, nil
+	}
+
+	deadline := time.Now().Add(2 * time.Minute)
+	last := base
+
+	for time.Now().Before(deadline) {
+		enriched, err := r.client.GetVMWithParams(ctx, target, true)
+		if err == nil && enriched != nil {
+			last = enriched
+			if enriched.GuestToolsInfo.IP != "" || enriched.GuestToolsInfo.DNSName != "" {
+				return enriched, nil
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
+
+	return last, nil
 }
 
 func (r *VMResource) readCreatedVM(ctx context.Context, task *client.Task, plan vmResourceModel, vm *client.VM) (*client.VM, error) {

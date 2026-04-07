@@ -41,6 +41,7 @@ type Client interface {
 	DeleteDatastoreItem(context.Context, []string) (string, error)
 	ListVMs(context.Context) ([]VM, error)
 	GetVM(context.Context, string) (*VM, error)
+	GetVMWithParams(context.Context, string, bool) (*VM, error)
 	ValidateVM(context.Context, *VM) (*ValidateResult, error)
 	CreateVM(context.Context, *CreateVMRequest) (string, error)
 	UpdateVM(context.Context, *VM) (string, error)

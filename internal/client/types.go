@@ -162,27 +162,35 @@ type Host struct {
 	Version  string
 }
 
+type VMGuestToolsInfo struct {
+	Status  string
+	Version string
+	IP      string
+	DNSName string
+}
+
 type VM struct {
-	PowerState       string          `json:"-"`
-	MonitoringState  uint32          `json:"-"`
-	MonitoringStatus uint32          `json:"-"`
-	DeploymentName   string          `json:"deployment_name,omitempty"`
-	Name             string          `json:"name,omitempty"`
-	UUID             string          `json:"uuid,omitempty"`
-	Compatibility    string          `json:"compatibility,omitempty"`
-	GuestOSFamily    string          `json:"guest_os_family,omitempty"`
-	GuestOSVersion   string          `json:"guest_os_version,omitempty"`
-	MachineType      string          `json:"machine_type,omitempty"`
-	Storage          VMStorage       `json:"storage"`
-	CPU              VMCPU           `json:"cpu"`
-	Memory           VMMemory        `json:"memory"`
-	VideoCard        VMVideo         `json:"video_card"`
-	USBControllers   []USBController `json:"usb_controllers,omitempty"`
-	InputDevices     []InputDevice   `json:"input_devices,omitempty"`
-	DiskDevices      []DiskDevice    `json:"disk_devices,omitempty"`
-	NetworkDevices   []NetworkDevice `json:"network_devices,omitempty"`
-	Options          VMOptions       `json:"options"`
-	IsTemplate       bool            `json:"is_template,omitempty"`
+	PowerState       string           `json:"-"`
+	MonitoringState  uint32           `json:"-"`
+	MonitoringStatus uint32           `json:"-"`
+	GuestToolsInfo   VMGuestToolsInfo `json:"-"`
+	DeploymentName   string           `json:"deployment_name,omitempty"`
+	Name             string           `json:"name,omitempty"`
+	UUID             string           `json:"uuid,omitempty"`
+	Compatibility    string           `json:"compatibility,omitempty"`
+	GuestOSFamily    string           `json:"guest_os_family,omitempty"`
+	GuestOSVersion   string           `json:"guest_os_version,omitempty"`
+	MachineType      string           `json:"machine_type,omitempty"`
+	Storage          VMStorage        `json:"storage"`
+	CPU              VMCPU            `json:"cpu"`
+	Memory           VMMemory         `json:"memory"`
+	VideoCard        VMVideo          `json:"video_card"`
+	USBControllers   []USBController  `json:"usb_controllers,omitempty"`
+	InputDevices     []InputDevice    `json:"input_devices,omitempty"`
+	DiskDevices      []DiskDevice     `json:"disk_devices,omitempty"`
+	NetworkDevices   []NetworkDevice  `json:"network_devices,omitempty"`
+	Options          VMOptions        `json:"options"`
+	IsTemplate       bool             `json:"is_template,omitempty"`
 }
 
 type VMStorage struct {

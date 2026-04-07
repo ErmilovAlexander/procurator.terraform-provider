@@ -411,6 +411,18 @@ func (c *grpcClient) GetVM(ctx context.Context, target string) (*VM, error) {
 	return &vm, nil
 }
 
+func (c *grpcClient) GetVMWithParams(ctx context.Context, target string, withGuestTools bool) (*VM, error) {
+	resp, err := c.unary(ctx, fullMethod("Vms", "GetWithParams"), map[string]any{
+		"target_id":   target,
+		"guest_tools": withGuestTools,
+	})
+	if err != nil {
+		return nil, err
+	}
+	vm := flattenVM(resp)
+	return &vm, nil
+}
+
 func (c *grpcClient) ValidateVM(ctx context.Context, vm *VM) (*ValidateResult, error) {
 	resp, err := c.unary(ctx, fullMethod("Vms", "Validate"), encodeVM(vm))
 	if err != nil {
@@ -697,6 +709,16 @@ func flattenVM(m map[string]any) VM {
 		IsTemplate:       getBool(m, "IsTemplate") || getBool(m, "is_template"),
 		MonitoringState:  uint32(nestedInt64(m, "monitoring", "state")),
 		MonitoringStatus: uint32(nestedInt64(m, "monitoring", "status")),
+	}
+	if mon, ok := getMap(m, "monitoring"); ok {
+		if gt, ok := getMap(mon, "guest_tools"); ok {
+			vm.GuestToolsInfo = VMGuestToolsInfo{
+				Status:  getString(gt, "status"),
+				Version: getString(gt, "version"),
+				IP:      getString(gt, "ip"),
+				DNSName: getString(gt, "dns_name"),
+			}
+		}
 	}
 	for _, item := range getList(m, "usb_controllers") {
 		vm.USBControllers = append(vm.USBControllers, USBController{Type: getString(item, "type")})

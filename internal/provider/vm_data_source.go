@@ -18,19 +18,23 @@ type VMDataSource struct {
 }
 
 type vmDataSourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	DeploymentName types.String `tfsdk:"deployment_name"`
-	Name           types.String `tfsdk:"name"`
-	UUID           types.String `tfsdk:"uuid"`
-	Compatibility  types.String `tfsdk:"compatibility"`
-	GuestOSFamily  types.String `tfsdk:"guest_os_family"`
-	GuestOSVersion types.String `tfsdk:"guest_os_version"`
-	MachineType    types.String `tfsdk:"machine_type"`
-	StorageID      types.String `tfsdk:"storage_id"`
-	StorageFolder  types.String `tfsdk:"storage_folder"`
-	VCPUs          types.Int64  `tfsdk:"vcpus"`
-	MemorySizeMB   types.Int64  `tfsdk:"memory_size_mb"`
-	IsTemplate     types.Bool   `tfsdk:"is_template"`
+	ID                types.String `tfsdk:"id"`
+	DeploymentName    types.String `tfsdk:"deployment_name"`
+	Name              types.String `tfsdk:"name"`
+	UUID              types.String `tfsdk:"uuid"`
+	Compatibility     types.String `tfsdk:"compatibility"`
+	GuestOSFamily     types.String `tfsdk:"guest_os_family"`
+	GuestOSVersion    types.String `tfsdk:"guest_os_version"`
+	MachineType       types.String `tfsdk:"machine_type"`
+	StorageID         types.String `tfsdk:"storage_id"`
+	StorageFolder     types.String `tfsdk:"storage_folder"`
+	VCPUs             types.Int64  `tfsdk:"vcpus"`
+	MemorySizeMB      types.Int64  `tfsdk:"memory_size_mb"`
+	IsTemplate        types.Bool   `tfsdk:"is_template"`
+	GuestToolsStatus  types.String `tfsdk:"guest_tools_status"`
+	GuestToolsVersion types.String `tfsdk:"guest_tools_version"`
+	GuestIP           types.String `tfsdk:"guest_ip"`
+	GuestDNSName      types.String `tfsdk:"guest_dns_name"`
 }
 
 func NewVMDataSource() datasource.DataSource { return &VMDataSource{} }
@@ -41,21 +45,25 @@ func (d *VMDataSource) Metadata(_ context.Context, req datasource.MetadataReques
 
 func (d *VMDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Looks up a VM by deployment_name, uuid or name using Vms.List.",
+		Description: "Looks up a VM by deployment_name, uuid or name using Vms.List and enriches runtime guest tools data using Vms.GetWithParams.",
 		Attributes: map[string]schema.Attribute{
-			"id":               schema.StringAttribute{Optional: true, Computed: true},
-			"deployment_name":  schema.StringAttribute{Optional: true, Computed: true},
-			"name":             schema.StringAttribute{Optional: true, Computed: true},
-			"uuid":             schema.StringAttribute{Optional: true, Computed: true},
-			"compatibility":    schema.StringAttribute{Computed: true},
-			"guest_os_family":  schema.StringAttribute{Computed: true},
-			"guest_os_version": schema.StringAttribute{Computed: true},
-			"machine_type":     schema.StringAttribute{Computed: true},
-			"storage_id":       schema.StringAttribute{Computed: true},
-			"storage_folder":   schema.StringAttribute{Computed: true},
-			"vcpus":            schema.Int64Attribute{Computed: true},
-			"memory_size_mb":   schema.Int64Attribute{Computed: true},
-			"is_template":      schema.BoolAttribute{Computed: true},
+			"id":                  schema.StringAttribute{Optional: true, Computed: true},
+			"deployment_name":     schema.StringAttribute{Optional: true, Computed: true},
+			"name":                schema.StringAttribute{Optional: true, Computed: true},
+			"uuid":                schema.StringAttribute{Optional: true, Computed: true},
+			"compatibility":       schema.StringAttribute{Computed: true},
+			"guest_os_family":     schema.StringAttribute{Computed: true},
+			"guest_os_version":    schema.StringAttribute{Computed: true},
+			"machine_type":        schema.StringAttribute{Computed: true},
+			"storage_id":          schema.StringAttribute{Computed: true},
+			"storage_folder":      schema.StringAttribute{Computed: true},
+			"vcpus":               schema.Int64Attribute{Computed: true},
+			"memory_size_mb":      schema.Int64Attribute{Computed: true},
+			"is_template":         schema.BoolAttribute{Computed: true},
+			"guest_tools_status":  schema.StringAttribute{Computed: true},
+			"guest_tools_version": schema.StringAttribute{Computed: true},
+			"guest_ip":            schema.StringAttribute{Computed: true},
+			"guest_dns_name":      schema.StringAttribute{Computed: true},
 		},
 	}
 }
@@ -86,20 +94,30 @@ func (d *VMDataSource) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
+	full, err := d.client.GetVMWithParams(ctx, match.DeploymentName, true)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to read VM with guest tools", err.Error())
+		return
+	}
+
 	state := vmDataSourceModel{
-		ID:             stringValue(match.DeploymentName),
-		DeploymentName: stringValue(match.DeploymentName),
-		Name:           stringValue(match.Name),
-		UUID:           stringValue(match.UUID),
-		Compatibility:  stringValue(match.Compatibility),
-		GuestOSFamily:  stringValue(match.GuestOSFamily),
-		GuestOSVersion: stringValue(match.GuestOSVersion),
-		MachineType:    stringValue(match.MachineType),
-		StorageID:      stringValue(match.Storage.ID),
-		StorageFolder:  stringValue(match.Storage.Folder),
-		VCPUs:          types.Int64Value(int64(match.CPU.VCPUs)),
-		MemorySizeMB:   types.Int64Value(int64(match.Memory.SizeMB)),
-		IsTemplate:     boolValue(match.IsTemplate),
+		ID:                stringValue(full.DeploymentName),
+		DeploymentName:    stringValue(full.DeploymentName),
+		Name:              stringValue(full.Name),
+		UUID:              stringValue(full.UUID),
+		Compatibility:     stringValue(full.Compatibility),
+		GuestOSFamily:     stringValue(full.GuestOSFamily),
+		GuestOSVersion:    stringValue(full.GuestOSVersion),
+		MachineType:       stringValue(full.MachineType),
+		StorageID:         stringValue(full.Storage.ID),
+		StorageFolder:     stringValue(full.Storage.Folder),
+		VCPUs:             types.Int64Value(int64(full.CPU.VCPUs)),
+		MemorySizeMB:      types.Int64Value(int64(full.Memory.SizeMB)),
+		IsTemplate:        boolValue(full.IsTemplate),
+		GuestToolsStatus:  stringValue(full.GuestToolsInfo.Status),
+		GuestToolsVersion: stringValue(full.GuestToolsInfo.Version),
+		GuestIP:           stringValue(full.GuestToolsInfo.IP),
+		GuestDNSName:      stringValue(full.GuestToolsInfo.DNSName),
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
